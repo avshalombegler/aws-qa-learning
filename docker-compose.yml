@@ -1,0 +1,16 @@
+services:
+  localstack:
+    container_name: aws-qa-learning-localstack
+    image: localstack/localstack:latest
+    restart: unless-stopped
+    ports:
+      - "4566:4566"
+    environment:
+      - DEBUG=0
+      - SERVICES=s3,sqs,sns,dynamodb,lambda,iam,sts,logs,events,stepfunctions
+      - PERSISTENCE=0
+      - LAMBDA_EXECUTOR=docker
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN}
+      - AWS_DEFAULT_REGION=us-east-1
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
