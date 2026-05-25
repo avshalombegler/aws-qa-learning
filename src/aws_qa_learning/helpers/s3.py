@@ -1,4 +1,4 @@
-"""Reusable S3 helper functions for tests and scripts."""
+"""Reusable S3, SQS helper functions for tests and scripts."""
 
 from botocore.exceptions import ClientError
 
@@ -33,3 +33,18 @@ def delete_bucket_if_exists(s3_client, bucket_name: str) -> None:
     except ClientError as e:
         if e.response["Error"]["Code"] != "NoSuchBucket":
             raise
+
+
+def configure_s3_to_sqs_notification(s3_client, bucket_name, queue_arn, events: list[str]) -> None:
+    """Configure an S3 bucket to send event notifications to an SQS queue."""
+    s3_client.put_bucket_notification_configuration(
+        Bucket=bucket_name,
+        NotificationConfiguration={
+            "QueueConfigurations": [
+                {
+                    "QueueArn": queue_arn,
+                    "Events": events,
+                }
+            ]
+        },
+    )
