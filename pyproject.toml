@@ -1,0 +1,45 @@
+[project]
+name = "aws-qa-learning"
+version = "0.1.0"
+description = "Personal learning project for AWS testing patterns using LocalStack"
+requires-python = ">=3.12"
+dependencies = [
+    "boto3>=1.34.0",
+    "pytest>=8.0.0",
+    "requests>=2.31.0",
+    "awscli-local>=0.22.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.5.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aws_qa_learning"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+
+[tool.ruff]
+line-length = 120
+
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+
+[tool.taskipy.tasks]
+check = "ruff check ."
+fix   = "ruff check . --fix && ruff format ."
