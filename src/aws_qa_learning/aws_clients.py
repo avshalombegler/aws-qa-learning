@@ -5,6 +5,7 @@ pointed at LocalStack. Both scripts and pytest fixtures import from here.
 """
 
 import os
+
 import boto3
 
 LOCALSTACK_ENDPOINT = "http://localhost:4566"
