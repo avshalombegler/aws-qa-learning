@@ -1,5 +1,4 @@
 """Verification tests - prove the full setup works end-to-end."""
-import pytest
 
 
 def test_localstack_is_reachable(s3_client) -> None:
