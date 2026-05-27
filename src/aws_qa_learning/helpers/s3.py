@@ -1,4 +1,4 @@
-"""Reusable S3, SQS helper functions for tests and scripts."""
+"""Helper functions for S3 operations used in tests and scripts."""
 
 from botocore.exceptions import ClientError
 
