@@ -40,9 +40,7 @@ def test_message_attributes_are_preserved(sqs_client, queue_factory) -> None:
     assert message_attributes["test_attr_2"]["DataType"] == "Number"
 
 
-def test_received_message_is_invisible_to_subsequent_reads(
-    sqs_client, queue_factory
-) -> None:
+def test_received_message_is_invisible_to_subsequent_reads(sqs_client, queue_factory) -> None:
     """Verify that a received message enters the visibility timeout and does not appear in the next poll."""
     queue_url = queue_factory()
     body = b"x"
