@@ -11,6 +11,10 @@ from aws_qa_learning.aws_clients import (
     create_sns_client,
     create_sqs_client,
 )
+from aws_qa_learning.helpers.s3 import (
+    delete_bucket_if_exists,
+    enable_versioning,
+)
 from aws_qa_learning.helpers.sqs import (
     delete_queue_if_exists,
 )
@@ -94,3 +98,26 @@ def topic_factory(sns_client) -> Generator[Callable[[bool], str], None, None]:
             sns_client.delete_topic(TopicArn=topic)
         except Exception as e:
             print(f"Failed to delete {topic}: {e}")
+
+
+@pytest.fixture
+def temporary_bucket(s3_client) -> Generator[str, Any, None]:
+    """
+    Create a unique bucket for the test, clean it up after.
+
+    Each test gets a fresh bucket with a unique name (UUID-based),
+    preventing collisions between parallel tests.
+    """
+    bucket_name = f"my-bucket-{uuid.uuid4()}"
+    s3_client.create_bucket(Bucket=bucket_name)
+    yield bucket_name
+    delete_bucket_if_exists(s3_client, bucket_name)
+
+
+@pytest.fixture
+def versioned_bucket(s3_client, temporary_bucket):
+    """
+    Create a temporary_bucket with versioning enabled.
+    """
+    enable_versioning(s3_client, temporary_bucket)
+    yield temporary_bucket
