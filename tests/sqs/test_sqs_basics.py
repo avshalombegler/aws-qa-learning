@@ -6,28 +6,28 @@ from aws_qa_learning.helpers.sqs import receive_messages_from_queue, send_messag
 def test_message_can_be_sent_and_received(sqs_client, queue_factory) -> None:
     """Verify that a message sent to a queue can be retrieved and its body matches the original."""
     queue_url = queue_factory()
-    body = b"x"
+    body = "x"
 
-    response = send_message_to_queue(sqs_client, queue_url, str(body))
+    response = send_message_to_queue(sqs_client, queue_url, body)
     expected_message_id = response["MessageId"]
 
     messages = receive_messages_from_queue(sqs_client, queue_url)
     matching_messages = [msg for msg in messages if expected_message_id == msg["MessageId"]]
 
-    assert str(body) == matching_messages[0]["Body"]
+    assert body == matching_messages[0]["Body"]
 
 
 def test_message_attributes_are_preserved(sqs_client, queue_factory) -> None:
     """Verify that custom message attributes sent with a message are returned unchanged on receive."""
     queue_url = queue_factory()
-    body = b"x"
+    body = "x"
 
     attributes = {
         "test_attr_1": {"DataType": "String", "StringValue": "OrderCreated"},
         "test_attr_2": {"DataType": "Number", "StringValue": "1337"},
     }
 
-    response = send_message_to_queue(sqs_client, queue_url, str(body), attributes)
+    response = send_message_to_queue(sqs_client, queue_url, body, attributes)
     expected_message_id = response["MessageId"]
 
     messages = receive_messages_from_queue(sqs_client, queue_url)
@@ -43,9 +43,9 @@ def test_message_attributes_are_preserved(sqs_client, queue_factory) -> None:
 def test_received_message_is_invisible_to_subsequent_reads(sqs_client, queue_factory) -> None:
     """Verify that a received message enters the visibility timeout and does not appear in the next poll."""
     queue_url = queue_factory()
-    body = b"x"
+    body = "x"
 
-    response = send_message_to_queue(sqs_client, queue_url, str(body))
+    response = send_message_to_queue(sqs_client, queue_url, body)
     expected_message_id = response["MessageId"]
 
     messages = receive_messages_from_queue(sqs_client, queue_url)
@@ -70,4 +70,4 @@ def test_fifo_queue_preserves_message_order(sqs_client, queue_factory) -> None:
     messages = receive_messages_from_queue(sqs_client, fifo_queue_url)
     assert len(messages) == 3
     for i, msg in enumerate(messages):
-        assert msg["Body"] == str(bodies[i])
+        assert msg["Body"] == str(bodies[i]), f"Message {i}: expected {bodies[i]}, got {msg['Body']}"
