@@ -1,6 +1,8 @@
 """Pytest configuration and shared fixtures for AWS QA learning project."""
 
 import uuid
+from collections.abc import Generator
+from typing import Any
 
 import pytest
 
@@ -16,6 +18,10 @@ from aws_qa_learning.helpers.sqs import (
     delete_queue_if_exists,
 )
 
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
+
 
 @pytest.fixture(scope="session")
 def s3_client():
@@ -30,7 +36,35 @@ def sqs_client():
 
 
 @pytest.fixture
-def temporary_bucket(s3_client):
+def queue_factory(sqs_client) -> Generator[str, Any, None]:
+    """
+    Yield a factory function that creates temporary SQS queues for a test.
+
+    Call the factory with ``is_fifo=True`` to create a FIFO queue (with
+    content-based deduplication enabled); omit it for a standard queue.
+    All queues created through the factory are deleted automatically after
+    the test completes.
+    """
+    created_queues = []
+
+    def _create_queue(is_fifo: bool = False) -> str:
+        queue_name = f"my-queue-{uuid.uuid4()}.fifo" if is_fifo else f"my-queue-{uuid.uuid4()}"
+        response = sqs_client.create_queue(
+            QueueName=queue_name,
+            Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"} if is_fifo else {},
+        )
+        url = response["QueueUrl"]
+        created_queues.append(url)
+        return url
+
+    yield _create_queue
+
+    for queue in created_queues:
+        delete_queue_if_exists(sqs_client, queue)
+
+
+@pytest.fixture
+def temporary_bucket(s3_client) -> Generator[str, Any, None]:
     """
     Create a unique bucket for the test, clean it up after.
 
@@ -50,18 +84,3 @@ def versioned_bucket(s3_client, temporary_bucket):
     """
     enable_versioning(s3_client, temporary_bucket)
     yield temporary_bucket
-
-
-@pytest.fixture
-def temporary_queue(sqs_client):
-    """
-    Create a unique queue for the test, clean it up after.
-
-    Each test gets a fresh queue with a unique name (UUID-based),
-    preventing collisions between parallel tests.
-    """
-    queue_name = f"my-queue-{uuid.uuid4()}"
-    response = sqs_client.create_queue(QueueName=queue_name)
-    queue_url = response["QueueUrl"]
-    yield queue_url
-    delete_queue_if_exists(sqs_client, queue_url)
