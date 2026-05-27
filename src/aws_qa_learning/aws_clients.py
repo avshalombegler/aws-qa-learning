@@ -33,3 +33,9 @@ def create_sqs_client():
     """Create a boto3 SQS client pointed at LocalStack."""
     setup_aws_credentials()
     return boto3.client("sqs", endpoint_url=LOCALSTACK_ENDPOINT)
+
+
+def create_sns_client():
+    """Create a boto3 SNS client pointed at LocalStack."""
+    setup_aws_credentials()
+    return boto3.client("sns", endpoint_url=LOCALSTACK_ENDPOINT)
