@@ -1,5 +1,6 @@
 """Helper functions for SQS operations used in tests and scripts."""
 
+import json
 from typing import Any
 
 from botocore.exceptions import ClientError
@@ -52,3 +53,21 @@ def receive_messages_from_queue(
         WaitTimeSeconds=wait_seconds,
     )
     return response.get("Messages", [])
+
+
+def allow_sns_to_send_to_queue(sqs_client, queue_url, queue_arn, topic_arn) -> None:
+    """Allow the given SNS topic to send messages to the given SQS queue."""
+    policy = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {"Service": "sns.amazonaws.com"},
+                "Action": "sqs:SendMessage",
+                "Resource": queue_arn,
+                "Condition": {"ArnEquals": {"aws:SourceArn": topic_arn}},
+            }
+        ],
+    }
+
+    sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)})
