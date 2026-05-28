@@ -40,17 +40,26 @@ def send_message_to_queue(
 def receive_messages_from_queue(
     sqs_client: Any,
     queue_url: str,
+    attribute_names: list | None = None,
+    message_attribute_names: list | None = None,
     max_messages: int = 10,
     wait_seconds: int = 5,
-    visibility_timeout: int = 30,
+    visibility_timeout: int = 20,
 ) -> list[dict[str, Any]]:
     """Poll an SQS queue and return up to max_messages messages, using long polling by default."""
+    if attribute_names is None:
+        attribute_names = ["All"]
+
+    if message_attribute_names is None:
+        message_attribute_names = ["All"]
+
     response = sqs_client.receive_message(
         QueueUrl=queue_url,
-        MessageAttributeNames=["All"],
+        AttributeNames=attribute_names,
+        MessageAttributeNames=message_attribute_names,
         MaxNumberOfMessages=max_messages,
-        VisibilityTimeout=visibility_timeout,
         WaitTimeSeconds=wait_seconds,
+        VisibilityTimeout=visibility_timeout,
     )
     return response.get("Messages", [])
 
