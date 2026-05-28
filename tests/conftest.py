@@ -1,5 +1,6 @@
 """Shared fixtures used across all AWS service test suites (S3, SQS, SNS)."""
 
+import json
 import uuid
 from collections.abc import Callable, Generator
 from typing import Any
@@ -49,16 +50,27 @@ def queue_factory(sqs_client) -> Generator[str, Any, None]:
 
     Call the factory with ``is_fifo=True`` to create a FIFO queue (with
     content-based deduplication enabled); omit it for a standard queue.
+    Pass ``redrive_policy`` as a dict (e.g. ``{"deadLetterTargetArn": ...,
+    "maxReceiveCount": N}``) to attach a DLQ redrive policy to the queue.
     All queues created through the factory are deleted automatically after
     the test completes.
     """
     created_queues = []
 
-    def _create_queue(is_fifo: bool = False) -> str:
-        queue_name = f"my-queue-{uuid.uuid4()}.fifo" if is_fifo else f"my-queue-{uuid.uuid4()}"
+    def _create_queue(is_fifo: bool = False, redrive_policy: dict | None = None) -> str:
+        attributes = {}
+        if is_fifo:
+            queue_name = f"my-queue-{uuid.uuid4()}.fifo"
+            attributes.update({"FifoQueue": "true", "ContentBasedDeduplication": "true"})
+        else:
+            queue_name = f"my-queue-{uuid.uuid4()}"
+
+        if redrive_policy:
+            attributes.update({"RedrivePolicy": json.dumps(redrive_policy)})
+
         response = sqs_client.create_queue(
             QueueName=queue_name,
-            Attributes={"FifoQueue": "true", "ContentBasedDeduplication": "true"} if is_fifo else {},
+            Attributes=attributes,
         )
         url = response["QueueUrl"]
         created_queues.append(url)
