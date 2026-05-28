@@ -2,7 +2,7 @@
 
 import json
 
-from aws_qa_learning.helpers.sqs import get_queue_arn, receive_messages_from_queue
+from aws_qa_learning.helpers.sqs import allow_sns_to_send_to_queue, get_queue_arn, receive_messages_from_queue
 
 
 def test_sns_publish_delivers_to_sqs_subscriber(sqs_client, sns_client, queue_factory, topic_factory):
@@ -13,20 +13,7 @@ def test_sns_publish_delivers_to_sqs_subscriber(sqs_client, sns_client, queue_fa
 
     queue_arn = get_queue_arn(sqs_client, queue_url)
 
-    policy = {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Principal": {"Service": "sns.amazonaws.com"},
-                "Action": "sqs:SendMessage",
-                "Resource": queue_arn,
-                "Condition": {"ArnEquals": {"aws:SourceArn": topic_arn}},
-            }
-        ],
-    }
-
-    sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)})
+    allow_sns_to_send_to_queue(sqs_client, queue_url, queue_arn, topic_arn)
 
     sns_client.subscribe(
         TopicArn=topic_arn,
