@@ -2,7 +2,12 @@
 
 import time
 
-from aws_qa_learning.helpers.sqs import get_queue_arn, receive_messages_from_queue, send_message_to_queue
+from aws_qa_learning.helpers.sqs import (
+    get_approximate_number_of_messages,
+    get_queue_arn,
+    receive_messages_from_queue,
+    send_message_to_queue,
+)
 
 
 def test_message_receive_in_dlq(sqs_client, queue_factory) -> None:
@@ -23,10 +28,8 @@ def test_message_receive_in_dlq(sqs_client, queue_factory) -> None:
     received_messages = receive_messages_from_queue(sqs_client, queue_url)
     assert len(received_messages) == 0
 
-    approximate_number_of_messages = sqs_client.get_queue_attributes(
-        QueueUrl=queue_url, AttributeNames=["ApproximateNumberOfMessages"]
-    )["Attributes"]["ApproximateNumberOfMessages"]
-    assert int(approximate_number_of_messages) == 0
+    approximate_number_of_messages = get_approximate_number_of_messages(sqs_client, queue_url)
+    assert approximate_number_of_messages == 0
 
     received_messages_from_dlq = receive_messages_from_queue(sqs_client, dlq_url)
     assert len(received_messages_from_dlq) == 1
