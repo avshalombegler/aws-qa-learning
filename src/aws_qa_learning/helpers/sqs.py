@@ -80,3 +80,11 @@ def allow_sns_to_send_to_queue(sqs_client, queue_url, queue_arn, topic_arn) -> N
     }
 
     sqs_client.set_queue_attributes(QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)})
+
+
+def get_approximate_number_of_messages(sqs_client, queue_url) -> int:
+    approximate_number_of_messages = sqs_client.get_queue_attributes(
+        QueueUrl=queue_url, AttributeNames=["ApproximateNumberOfMessages"]
+    )["Attributes"]["ApproximateNumberOfMessages"]
+
+    return int(approximate_number_of_messages)
