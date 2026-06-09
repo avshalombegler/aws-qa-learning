@@ -11,10 +11,10 @@ def test_s3_put_triggers_sqs_notification(s3_client, sqs_client, temporary_bucke
     queue_url = queue_factory()
     queue_arn = get_queue_arn(sqs_client, queue_url)
 
-    configure_s3_to_sqs_notification(s3_client, temporary_bucket, queue_arn, ["s3:ObjectCreated:*"])
+    configure_s3_to_sqs_notification(s3_client, temporary_bucket, queue_arn, ['s3:ObjectCreated:*'])
 
-    key = "notification/test.txt"
-    body = b"x"
+    key = 'notification/test.txt'
+    body = b'x'
     s3_client.put_object(Bucket=temporary_bucket, Key=key, Body=body)
 
     response = sqs_client.receive_message(
@@ -23,15 +23,15 @@ def test_s3_put_triggers_sqs_notification(s3_client, sqs_client, temporary_bucke
         WaitTimeSeconds=15,
     )
 
-    messages = response.get("Messages", [])
+    messages = response.get('Messages', [])
 
     # Filtering LocalStack test notification
-    s3_events = [msg for msg in messages if "Records" in json.loads(msg["Body"])]
+    s3_events = [msg for msg in messages if 'Records' in json.loads(msg['Body'])]
 
     assert len(s3_events) == 1
 
-    event_body = json.loads(s3_events[0]["Body"])
-    record = event_body["Records"][0]
-    assert record["s3"]["bucket"]["name"] == temporary_bucket
-    assert record["s3"]["object"]["key"] == key
-    assert record["eventName"] == "ObjectCreated:Put"
+    event_body = json.loads(s3_events[0]['Body'])
+    record = event_body['Records'][0]
+    assert record['s3']['bucket']['name'] == temporary_bucket
+    assert record['s3']['object']['key'] == key
+    assert record['eventName'] == 'ObjectCreated:Put'

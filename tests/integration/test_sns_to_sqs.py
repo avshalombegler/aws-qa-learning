@@ -17,19 +17,19 @@ def test_sns_publish_delivers_to_sqs_subscriber(sqs_client, sns_client, queue_fa
 
     sns_client.subscribe(
         TopicArn=topic_arn,
-        Protocol="sqs",
+        Protocol='sqs',
         Endpoint=queue_arn,
     )
 
     response = sns_client.list_subscriptions_by_topic(TopicArn=topic_arn)
-    assert len(response["Subscriptions"]) == 1
+    assert len(response['Subscriptions']) == 1
 
-    subscription = response["Subscriptions"][0]
-    assert subscription["TopicArn"] == topic_arn
-    assert subscription["Endpoint"] == queue_arn
-    assert subscription["Protocol"] == "sqs"
+    subscription = response['Subscriptions'][0]
+    assert subscription['TopicArn'] == topic_arn
+    assert subscription['Endpoint'] == queue_arn
+    assert subscription['Protocol'] == 'sqs'
 
-    message = "Hello SNS"
+    message = 'Hello SNS'
     sns_client.publish(
         TopicArn=topic_arn,
         Message=message,
@@ -38,8 +38,8 @@ def test_sns_publish_delivers_to_sqs_subscriber(sqs_client, sns_client, queue_fa
     received_messages = receive_messages_from_queue(sqs_client, queue_url)
     assert len(received_messages) == 1
 
-    sqs_message_body = received_messages[0]["Body"]
+    sqs_message_body = received_messages[0]['Body']
 
     envelope = json.loads(sqs_message_body)
-    assert envelope["Message"] == message
-    assert envelope["TopicArn"] == topic_arn
+    assert envelope['Message'] == message
+    assert envelope['TopicArn'] == topic_arn
