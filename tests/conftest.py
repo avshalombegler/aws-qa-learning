@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 
 from aws_qa_learning.aws_clients import (
+    create_dynamodb_client,
     create_s3_client,
     create_sns_client,
     create_sqs_client,
@@ -25,22 +26,28 @@ from aws_qa_learning.helpers.sqs import (
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
 def s3_client():
     """boto3 S3 client pointed at LocalStack."""
     return create_s3_client()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
 def sqs_client():
     """boto3 SQS client pointed at LocalStack."""
     return create_sqs_client()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
 def sns_client():
     """boto3 SNS client pointed at LocalStack."""
     return create_sns_client()
+
+
+@pytest.fixture(scope='session')
+def dynamodb_client():
+    """boto3 DynamoDB client pointed at LocalStack."""
+    return create_dynamodb_client()
 
 
 @pytest.fixture
@@ -60,19 +67,19 @@ def queue_factory(sqs_client) -> Generator[str, Any, None]:
     def _create_queue(is_fifo: bool = False, redrive_policy: dict | None = None) -> str:
         attributes = {}
         if is_fifo:
-            queue_name = f"my-queue-{uuid.uuid4()}.fifo"
-            attributes.update({"FifoQueue": "true", "ContentBasedDeduplication": "true"})
+            queue_name = f'my-queue-{uuid.uuid4()}.fifo'
+            attributes.update({'FifoQueue': 'true', 'ContentBasedDeduplication': 'true'})
         else:
-            queue_name = f"my-queue-{uuid.uuid4()}"
+            queue_name = f'my-queue-{uuid.uuid4()}'
 
         if redrive_policy:
-            attributes.update({"RedrivePolicy": json.dumps(redrive_policy)})
+            attributes.update({'RedrivePolicy': json.dumps(redrive_policy)})
 
         response = sqs_client.create_queue(
             QueueName=queue_name,
             Attributes=attributes,
         )
-        url = response["QueueUrl"]
+        url = response['QueueUrl']
         created_queues.append(url)
         return url
 
@@ -93,12 +100,12 @@ def topic_factory(sns_client) -> Generator[Callable[[bool], str], None, None]:
     created_topics = []
 
     def _create_topic(is_fifo: bool = False) -> str:
-        topic_name = f"my-topic-{uuid.uuid4()}.fifo" if is_fifo else f"my-topic-{uuid.uuid4()}"
+        topic_name = f'my-topic-{uuid.uuid4()}.fifo' if is_fifo else f'my-topic-{uuid.uuid4()}'
         response = sns_client.create_topic(
             Name=topic_name,
-            Attributes={"FifoTopic": "true", "ContentBasedDeduplication": "true"} if is_fifo else {},
+            Attributes={'FifoTopic': 'true', 'ContentBasedDeduplication': 'true'} if is_fifo else {},
         )
-        topic_arn = response["TopicArn"]
+        topic_arn = response['TopicArn']
         created_topics.append(topic_arn)
 
         return topic_arn
@@ -109,7 +116,43 @@ def topic_factory(sns_client) -> Generator[Callable[[bool], str], None, None]:
         try:
             sns_client.delete_topic(TopicArn=topic)
         except Exception as e:
-            print(f"Failed to delete {topic}: {e}")
+            print(f'Failed to delete {topic}: {e}')
+
+
+@pytest.fixture
+def table_factory(dynamodb_client) -> Generator[Callable[[], str], Any, None]:
+    """Fixture that yields a callable for creating isolated DynamoDB tables with a PK/SK key schema.
+
+    Each call creates a uniquely named table and waits until it is active.
+    All tables created during the test are deleted during teardown.
+    """
+    created_tables = []
+
+    def _create_table() -> str:
+        table_name = f'my-table-{uuid.uuid4()}'
+        dynamodb_client.create_table(
+            AttributeDefinitions=[
+                {'AttributeName': 'PK', 'AttributeType': 'S'},
+                {'AttributeName': 'SK', 'AttributeType': 'S'},
+            ],
+            TableName=table_name,
+            KeySchema=[
+                {'AttributeName': 'PK', 'KeyType': 'HASH'},
+                {'AttributeName': 'SK', 'KeyType': 'RANGE'},
+            ],
+            BillingMode='PAY_PER_REQUEST',
+        )
+        created_tables.append(table_name)
+
+        dynamodb_table_exists_waiter = dynamodb_client.get_waiter('table_exists')
+        dynamodb_table_exists_waiter.wait(TableName=table_name)
+
+        return table_name
+
+    yield _create_table
+
+    for table in created_tables:
+        dynamodb_client.delete_table(TableName=table)
 
 
 @pytest.fixture
@@ -120,7 +163,7 @@ def temporary_bucket(s3_client) -> Generator[str, Any, None]:
     Each test gets a fresh bucket with a unique name (UUID-based),
     preventing collisions between parallel tests.
     """
-    bucket_name = f"my-bucket-{uuid.uuid4()}"
+    bucket_name = f'my-bucket-{uuid.uuid4()}'
     s3_client.create_bucket(Bucket=bucket_name)
     yield bucket_name
     delete_bucket_if_exists(s3_client, bucket_name)
