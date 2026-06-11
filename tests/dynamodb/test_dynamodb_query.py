@@ -27,7 +27,7 @@ def test_dynamodb_basic_query(dynamodb_client, table_factory) -> None:
         TableName=table_name,
         KeyConditionExpression='PK = :pk_val',
         ExpressionAttributeValues={':pk_val': pk['PK']},
-        ScanIndexForward=False
+        ScanIndexForward=False,
     )
 
     items = response['Items']
