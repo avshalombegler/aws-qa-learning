@@ -45,3 +45,9 @@ def create_dynamodb_client():
     """Create a boto3 DynamoDB client pointed at LocalStack."""
     setup_aws_credentials()
     return boto3.client('dynamodb', endpoint_url=LOCALSTACK_ENDPOINT)
+
+
+def create_lambda_client():
+    """Create a boto3 Lambda client pointed at LocalStack."""
+    setup_aws_credentials()
+    return boto3.client('lambda', endpoint_url=LOCALSTACK_ENDPOINT)
