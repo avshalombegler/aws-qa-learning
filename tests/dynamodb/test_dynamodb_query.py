@@ -10,8 +10,14 @@ def test_dynamodb_basic_query(dynamodb_client, table_factory) -> None:
     pk = {'PK': {'S': 'CUSTOMER#123'}}
     sk_1 = {'SK': {'S': 'PROFILE'}}
     sk_2 = {'SK': {'S': 'ORDER#001'}}
-    item_1 = {**pk, **sk_1,}
-    item_2 = {**pk, **sk_2,}
+    item_1 = {
+        **pk,
+        **sk_1,
+    }
+    item_2 = {
+        **pk,
+        **sk_2,
+    }
 
     put_item_to_db(dynamodb_client, table_name, item_1)
 
