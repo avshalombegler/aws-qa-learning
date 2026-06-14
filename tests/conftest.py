@@ -124,24 +124,52 @@ def table_factory(dynamodb_client) -> Generator[Callable[[], str], Any, None]:
     """Fixture that yields a callable for creating isolated DynamoDB tables with a PK/SK key schema.
 
     Each call creates a uniquely named table and waits until it is active.
+    Optionally accepts gsi_name, gsi_pk, gsi_sk, and projection to add a
+    Global Secondary Index to the table.
     All tables created during the test are deleted during teardown.
     """
     created_tables = []
 
-    def _create_table() -> str:
+    def _create_table(
+        gsi_name: str | None = None,
+        gsi_pk: str | None = None,
+        gsi_sk: str | None = None,
+        projection: dict | None = None,
+    ) -> str:
         table_name = f'my-table-{uuid.uuid4()}'
-        dynamodb_client.create_table(
-            AttributeDefinitions=[
+
+        kwargs = {
+            'TableName': table_name,
+            'AttributeDefinitions': [
                 {'AttributeName': 'PK', 'AttributeType': 'S'},
                 {'AttributeName': 'SK', 'AttributeType': 'S'},
             ],
-            TableName=table_name,
-            KeySchema=[
+            'KeySchema': [
                 {'AttributeName': 'PK', 'KeyType': 'HASH'},
                 {'AttributeName': 'SK', 'KeyType': 'RANGE'},
             ],
-            BillingMode='PAY_PER_REQUEST',
-        )
+            'BillingMode': 'PAY_PER_REQUEST',
+        }
+
+        if gsi_pk is not None:
+            gsi_key_schema = [{'AttributeName': gsi_pk, 'KeyType': 'HASH'}]
+            if gsi_sk is not None:
+                gsi_key_schema.append({'AttributeName': gsi_sk, 'KeyType': 'RANGE'})
+
+            kwargs['GlobalSecondaryIndexes'] = [
+                {
+                    'IndexName': gsi_name,
+                    'KeySchema': gsi_key_schema,
+                    'Projection': projection,
+                }
+            ]
+
+            kwargs['AttributeDefinitions'].append({'AttributeName': gsi_pk, 'AttributeType': 'S'})
+            if gsi_sk is not None:
+                kwargs['AttributeDefinitions'].append({'AttributeName': gsi_sk, 'AttributeType': 'S'})
+
+        dynamodb_client.create_table(**kwargs)
+
         created_tables.append(table_name)
 
         dynamodb_table_exists_waiter = dynamodb_client.get_waiter('table_exists')
