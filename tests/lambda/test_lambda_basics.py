@@ -3,7 +3,7 @@
 import json
 
 
-def test_lambda(lambda_client, lambda_factory) -> None:
+def test_echo_handler_returns_payload_unchanged(lambda_client, lambda_factory) -> None:
     """Deploy the echo handler and verify it returns the invocation payload unchanged."""
     file_path = 'lambdas/echo_handler.py'
     handler = 'handler'
