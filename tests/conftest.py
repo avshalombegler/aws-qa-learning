@@ -9,6 +9,7 @@ import pytest
 
 from aws_qa_learning.aws_clients import (
     create_dynamodb_client,
+    create_lambda_client,
     create_s3_client,
     create_sns_client,
     create_sqs_client,
@@ -20,6 +21,7 @@ from aws_qa_learning.helpers.s3 import (
 from aws_qa_learning.helpers.sqs import (
     delete_queue_if_exists,
 )
+from aws_qa_learning.utils import make_zip_bytes
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -48,6 +50,12 @@ def sns_client():
 def dynamodb_client():
     """boto3 DynamoDB client pointed at LocalStack."""
     return create_dynamodb_client()
+
+
+@pytest.fixture(scope='session')
+def lambda_client():
+    """boto3 Lambda client pointed at LocalStack."""
+    return create_lambda_client()
 
 
 @pytest.fixture
@@ -121,7 +129,8 @@ def topic_factory(sns_client) -> Generator[Callable[[bool], str], None, None]:
 
 @pytest.fixture
 def table_factory(dynamodb_client) -> Generator[Callable[[], str], Any, None]:
-    """Fixture that yields a callable for creating isolated DynamoDB tables with a PK/SK key schema.
+    """
+    Fixture that yields a callable for creating isolated DynamoDB tables with a PK/SK key schema.
 
     Each call creates a uniquely named table and waits until it is active.
     Optionally accepts gsi_name, gsi_pk, gsi_sk, and projection to add a
@@ -181,6 +190,46 @@ def table_factory(dynamodb_client) -> Generator[Callable[[], str], Any, None]:
 
     for table in created_tables:
         dynamodb_client.delete_table(TableName=table)
+
+
+@pytest.fixture
+def lambda_factory(lambda_client) -> Generator[Callable[..., str], Any, None]:
+    """
+    Yield a factory function that deploys temporary Lambda functions from local source files.
+
+    Call the factory with the path to a Python file and the name of its
+    handler function (e.g. ``handler``); the file is zipped and uploaded as
+    the function code. The factory waits until the function is active before
+    returning its name. All functions created through the factory are
+    deleted automatically after the test completes.
+    """
+    created_functions = []
+
+    def _create_lambda(file_path: str, handler: str) -> str:
+        function_name = f'my-lambda-{uuid.uuid4()}'
+        file_name = file_path.split('/')[-1]
+        code = make_zip_bytes(file_path, file_name)
+        kwargs = {
+            'FunctionName': function_name,
+            'Runtime': 'python3.12',
+            'Role': 'arn:aws:iam::000000000000:role/lambda-role',
+            'Handler': f'{file_name.split(".")[0]}.{handler}',
+            'Code': {'ZipFile': code},
+        }
+
+        lambda_client.create_function(**kwargs)
+
+        created_functions.append(function_name)
+
+        lambda_function_active_waiter = lambda_client.get_waiter('function_active_v2')
+        lambda_function_active_waiter.wait(FunctionName=function_name)
+
+        return function_name
+
+    yield _create_lambda
+
+    for function_name in created_functions:
+        lambda_client.delete_function(FunctionName=function_name)
 
 
 @pytest.fixture
