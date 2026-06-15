@@ -144,6 +144,7 @@ def table_factory(dynamodb_client) -> Generator[Callable[[], str], Any, None]:
         gsi_pk: str | None = None,
         gsi_sk: str | None = None,
         projection: dict | None = None,
+        stream_view_type: str | None = None,
     ) -> str:
         table_name = f'my-table-{uuid.uuid4()}'
 
@@ -177,6 +178,9 @@ def table_factory(dynamodb_client) -> Generator[Callable[[], str], Any, None]:
             if gsi_sk is not None:
                 kwargs['AttributeDefinitions'].append({'AttributeName': gsi_sk, 'AttributeType': 'S'})
 
+        if stream_view_type is not None:
+            kwargs['StreamSpecification'] = {'StreamEnabled': True, 'StreamViewType': stream_view_type}
+
         dynamodb_client.create_table(**kwargs)
 
         created_tables.append(table_name)
@@ -205,7 +209,7 @@ def lambda_factory(lambda_client) -> Generator[Callable[..., str], Any, None]:
     """
     created_functions = []
 
-    def _create_lambda(file_path: str, handler: str) -> str:
+    def _create_lambda(file_path: str, handler: str, environment: dict | None = None) -> str:
         function_name = f'my-lambda-{uuid.uuid4()}'
         file_name = file_path.split('/')[-1]
         code = make_zip_bytes(file_path, file_name)
@@ -216,6 +220,9 @@ def lambda_factory(lambda_client) -> Generator[Callable[..., str], Any, None]:
             'Handler': f'{file_name.split(".")[0]}.{handler}',
             'Code': {'ZipFile': code},
         }
+
+        if environment is not None:
+            kwargs['Environment'] = environment
 
         lambda_client.create_function(**kwargs)
 
@@ -231,6 +238,25 @@ def lambda_factory(lambda_client) -> Generator[Callable[..., str], Any, None]:
     for function_name in created_functions:
         lambda_client.delete_function(FunctionName=function_name)
 
+
+@pytest.fixture
+def event_source_mapping_factory(lambda_client) -> Generator[Callable[..., str], Any, None]:
+    created_mapping_uuids = []
+
+    def _create_mapping(event_source_arn: str, function_name: str, starting_position: str) -> str:
+        response = lambda_client.create_event_source_mapping(
+            EventSourceArn=event_source_arn,
+            FunctionName=function_name,
+            StartingPosition=starting_position ,
+        )
+        mapping_uuid = response['UUID']
+        created_mapping_uuids.append(mapping_uuid)
+        return mapping_uuid
+
+    yield _create_mapping
+
+    for mapping_uuid in created_mapping_uuids:
+        lambda_client.delete_event_source_mapping(UUID=mapping_uuid)
 
 @pytest.fixture
 def temporary_bucket(s3_client) -> Generator[str, Any, None]:
