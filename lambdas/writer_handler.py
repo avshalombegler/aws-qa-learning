@@ -1,4 +1,4 @@
-"""Lambda handler that writes an item to a DynamoDB table."""
+"""Lambda handler that"""
 
 import os
 
@@ -6,7 +6,7 @@ import boto3
 
 
 def handler(event, context):
-    """Put the item from the event into the specified DynamoDB table."""
+    """"""
     # print(f'Received event: {event}')
 
     endpoint_url = os.environ.get('AWS_ENDPOINT_URL')
