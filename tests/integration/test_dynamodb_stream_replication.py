@@ -4,7 +4,7 @@ import time
 
 
 def test_lambda_copies_item_from_stream_to_target_table(
-    lambda_client, dynamodb_client, lambda_factory, table_factory, event_source_mapping_factory
+    dynamodb_client, lambda_factory, table_factory, event_source_mapping_factory
 ) -> None:
     """
     Verify a stream-triggered Lambda replicates a new item to a target table.
