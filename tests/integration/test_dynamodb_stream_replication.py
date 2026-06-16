@@ -14,20 +14,21 @@ def test_lambda_copies_item_from_stream_to_target_table(
     second table. Polls the target table until the item appears and asserts
     its content matches what was written.
     """
-    stream_table_name = table_factory(stream_view_type='NEW_IMAGE')
-    desc = dynamodb_client.describe_table(TableName=stream_table_name)
-    stream_arn = desc['Table']['LatestStreamArn']
-    target_table_name = table_factory()
-    file_path = 'lambdas/stream_handler.py'
-    handler = 'handler'
-    environment = {'Variables': {'TARGET_TABLE': target_table_name}}
     item_name = 'Avshalom'
     item = {
         'PK': {'S': 'CUSTOMER#123'},
         'SK': {'S': 'PROFILE'},
         'name': {'S': item_name},
     }
+    file_path = 'lambdas/stream_handler.py'
+    handler = 'handler'
 
+    stream_table_name = table_factory(stream_view_type='NEW_IMAGE')
+    desc = dynamodb_client.describe_table(TableName=stream_table_name)
+    stream_arn = desc['Table']['LatestStreamArn']
+
+    target_table_name = table_factory()
+    environment = {'Variables': {'TARGET_TABLE': target_table_name}}
     function_name = lambda_factory(file_path, handler, environment)
 
     event_source_mapping_factory(stream_arn, function_name, 'LATEST')
