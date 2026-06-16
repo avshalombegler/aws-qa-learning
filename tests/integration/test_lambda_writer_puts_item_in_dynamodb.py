@@ -6,7 +6,6 @@ import json
 def test_lambda_writer_puts_item_in_dynamodb(lambda_client, dynamodb_client, lambda_factory, table_factory) -> None:
     """Verify that invoking the writer Lambda puts the item into DynamoDB and returns a 200 status."""
 
-    table_name = table_factory()
     file_path = 'lambdas/writer_handler.py'
     handler = 'handler'
     item_name = 'Avshalom'
@@ -15,6 +14,9 @@ def test_lambda_writer_puts_item_in_dynamodb(lambda_client, dynamodb_client, lam
         'SK': {'S': 'PROFILE'},
         'name': {'S': item_name},
     }
+
+    table_name = table_factory()
+    
     payload = {
         'table_name': table_name,
         'item': item,
