@@ -12,6 +12,7 @@ from aws_qa_learning.aws_clients import (
     create_s3_client,
     create_sns_client,
     create_sqs_client,
+    create_step_functions_client,
 )
 from aws_qa_learning.helpers.s3 import (
     delete_bucket_if_exists,
@@ -23,6 +24,7 @@ pytest_plugins = ['factories']
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(scope='session')
 def s3_client():
@@ -57,7 +59,7 @@ def lambda_client():
 @pytest.fixture(scope='session')
 def step_functions_client():
     """boto3 Step Functions (SFN) client pointed at LocalStack."""
-    return create_lambda_client()
+    return create_step_functions_client()
 
 
 @pytest.fixture
