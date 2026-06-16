@@ -54,4 +54,3 @@ def test_lambda_copies_item_from_stream_to_target_table(
 
     assert received is not None  # fail-fast if the timeout passed without the item
     assert received['Item'] == item  # then assert on the content
-    print(lambda_client.list_event_source_mappings()['EventSourceMappings'])
