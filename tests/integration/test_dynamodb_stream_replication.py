@@ -32,7 +32,10 @@ def test_lambda_copies_item_from_stream_to_target_table(
 
     event_source_mapping_factory(stream_arn, function_name, 'LATEST')
 
-    dynamodb_client.put_item(TableName=stream_table_name, Item=item,)
+    dynamodb_client.put_item(
+        TableName=stream_table_name,
+        Item=item,
+    )
 
     # The stream → Lambda flow is asynchronous: the write to table A triggers the
     # Lambda eventually, not immediately. Poll table B with a timeout until the item
