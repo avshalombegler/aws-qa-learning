@@ -23,4 +23,7 @@ def handler(event, context) -> None:
     # failed batches, so the handler may run on the same record more than once.
     for record in event['Records']:
         new_image = record['dynamodb']['NewImage']
-        dynamodb_client.put_item(TableName=target_table, Item=new_image,)
+        dynamodb_client.put_item(
+            TableName=target_table,
+            Item=new_image,
+        )
