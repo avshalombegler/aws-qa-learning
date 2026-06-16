@@ -24,19 +24,19 @@ def setup_aws_credentials() -> None:
 
 
 def create_s3_client():
-    """Create a boto3 S3 client pointed at LocalStack."""
+    """Create a boto3 Simple Storage Service (S3) client pointed at LocalStack."""
     setup_aws_credentials()
     return boto3.client('s3', endpoint_url=LOCALSTACK_ENDPOINT)
 
 
 def create_sqs_client():
-    """Create a boto3 SQS client pointed at LocalStack."""
+    """Create a boto3 Simple Queue Service (SQS) client pointed at LocalStack."""
     setup_aws_credentials()
     return boto3.client('sqs', endpoint_url=LOCALSTACK_ENDPOINT)
 
 
 def create_sns_client():
-    """Create a boto3 SNS client pointed at LocalStack."""
+    """Create a boto3 Simple Notification Service (SNS) client pointed at LocalStack."""
     setup_aws_credentials()
     return boto3.client('sns', endpoint_url=LOCALSTACK_ENDPOINT)
 
@@ -53,7 +53,7 @@ def create_lambda_client():
     return boto3.client('lambda', endpoint_url=LOCALSTACK_ENDPOINT)
 
 
-def create_dynamodbstreams_client():
-    """Create a boto3 DynamoDBStreams client pointed at LocalStack."""
+def create_step_functions_client():
+    """Create a boto3 Step Functions (SFN) client pointed at LocalStack."""
     setup_aws_credentials()
-    return boto3.client('dynamodbstreams', endpoint_url=LOCALSTACK_ENDPOINT)
+    return boto3.client('stepfunctions', endpoint_url=LOCALSTACK_ENDPOINT)
