@@ -16,7 +16,7 @@ def test_lambda_writer_puts_item_in_dynamodb(lambda_client, dynamodb_client, lam
     }
 
     table_name = table_factory()
-    
+
     payload = {
         'table_name': table_name,
         'item': item,
