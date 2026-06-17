@@ -1,4 +1,4 @@
-"""Shared fixtures used across all AWS service test suites (S3, SQS, SNS)."""
+"""Shared fixtures used across all AWS service test suites."""
 
 import uuid
 from collections.abc import Generator
@@ -8,6 +8,7 @@ import pytest
 
 from aws_qa_learning.aws_clients import (
     create_dynamodb_client,
+    create_event_bridge_client,
     create_lambda_client,
     create_s3_client,
     create_sns_client,
@@ -60,6 +61,12 @@ def lambda_client():
 def step_functions_client():
     """boto3 Step Functions (SFN) client pointed at LocalStack."""
     return create_step_functions_client()
+
+
+@pytest.fixture(scope='session')
+def event_bridge_client():
+    """boto3 EventBridge client pointed at LocalStack."""
+    return create_event_bridge_client()
 
 
 @pytest.fixture
