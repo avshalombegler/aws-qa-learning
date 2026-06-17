@@ -57,3 +57,9 @@ def create_step_functions_client():
     """Create a boto3 Step Functions (SFN) client pointed at LocalStack."""
     setup_aws_credentials()
     return boto3.client('stepfunctions', endpoint_url=LOCALSTACK_ENDPOINT)
+
+
+def create_event_bridge_client():
+    """Create a boto3 EventBridge client pointed at LocalStack."""
+    setup_aws_credentials()
+    return boto3.client('events', endpoint_url=LOCALSTACK_ENDPOINT)
