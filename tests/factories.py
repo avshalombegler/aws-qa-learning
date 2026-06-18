@@ -237,7 +237,7 @@ def state_machine_factory(step_functions_client) -> Generator[Callable[..., str]
     state machine without a definition. All state machines created through
     the factory are deleted automatically after the test completes.
     """
-    created_state_machines_arns = []
+    created_state_machine_arns = []
 
     def _create_state_machine(definition: dict | None = None) -> str:
         kwargs = {
@@ -250,11 +250,88 @@ def state_machine_factory(step_functions_client) -> Generator[Callable[..., str]
 
         state_machine_arn = step_functions_client.create_state_machine(**kwargs)['stateMachineArn']
 
-        created_state_machines_arns.append(state_machine_arn)
+        created_state_machine_arns.append(state_machine_arn)
 
         return state_machine_arn
 
     yield _create_state_machine
 
-    for state_machine_arn in created_state_machines_arns:
+    for state_machine_arn in created_state_machine_arns:
         step_functions_client.delete_state_machine(stateMachineArn=state_machine_arn)
+
+
+@pytest.fixture
+def event_bus_factory(event_bridge_client) -> Generator[Callable[..., str], Any, None]:
+    """
+    Yield a factory function that creates temporary EventBridge event buses.
+
+    Call the factory with no arguments to create an event bus with a unique
+    name. All event buses created through the factory are deleted
+    automatically after the test completes.
+    """
+    created_event_bus_names = []
+
+    def _create_event_bus() -> str:
+        event_bus_name = f'my-event-bus-{uuid.uuid4()}'
+
+        event_bridge_client.create_event_bus(
+            Name=event_bus_name,
+        )
+
+        created_event_bus_names.append(event_bus_name)
+
+        return event_bus_name
+
+    yield _create_event_bus
+
+    for event_bus_name in created_event_bus_names:
+        event_bridge_client.delete_event_bus(Name=event_bus_name)
+
+
+@pytest.fixture
+def rule_targets_factory(event_bridge_client) -> Generator[Callable[..., None], Any, None]:
+    """
+    Yield a factory function that creates a temporary EventBridge rule with a target.
+
+    Call the factory with an event bus name, an event pattern, and the ARN of
+    the target (e.g. an SQS queue) to create a rule that routes matching
+    events to that target. All rules and targets created through the factory
+    are removed automatically after the test completes.
+    """
+    created_rule_targets = []
+
+    def _put_rule_targets(event_bus_name: str, event_bus_pattern: str, queue_arn: str) -> None:
+        rule_name = f'my-rule-{uuid.uuid4()}'
+        role_arn = 'arn:aws:iam::000000000000:role/rule-role'
+        targets_id = f'my-target-id-{uuid.uuid4()}'
+        created_rule_targets.append({'Rule': rule_name, 'EventBusName': event_bus_name, 'Targets': [targets_id]})
+
+        rule_kwargs = {
+            'Name': rule_name,
+            'EventPattern': event_bus_pattern,
+            'RoleArn': role_arn,
+            'EventBusName': event_bus_name,
+        }
+
+        targets = [
+            {'Arn': queue_arn, 'Id': targets_id, 'RoleArn': role_arn},
+        ]
+
+        event_bridge_client.put_rule(**rule_kwargs)
+
+        event_bridge_client.put_targets(
+            Rule=rule_name,
+            EventBusName=event_bus_name,
+            Targets=targets,
+        )
+
+    yield _put_rule_targets
+
+    for rule_targets in created_rule_targets:
+        event_bridge_client.remove_targets(
+            Rule=rule_targets['Rule'], EventBusName=rule_targets['EventBusName'], Ids=rule_targets['Targets']
+        )
+        event_bridge_client.delete_rule(
+            Name=rule_targets['Rule'],
+            EventBusName=rule_targets['EventBusName'],
+        )
