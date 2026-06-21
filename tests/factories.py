@@ -300,7 +300,7 @@ def rule_targets_factory(event_bridge_client) -> Generator[Callable[..., None], 
     """
     created_rule_targets = []
 
-    def _put_rule_targets(event_bus_name: str, event_bus_pattern: str, queue_arn: str) -> None:
+    def _put_rule_targets(event_bus_name: str, event_bus_pattern: str, target_arn: str) -> None:
         rule_name = f'my-rule-{uuid.uuid4()}'
         role_arn = 'arn:aws:iam::000000000000:role/rule-role'
         targets_id = f'my-target-id-{uuid.uuid4()}'
@@ -314,7 +314,7 @@ def rule_targets_factory(event_bridge_client) -> Generator[Callable[..., None], 
         }
 
         targets = [
-            {'Arn': queue_arn, 'Id': targets_id, 'RoleArn': role_arn},
+            {'Arn': target_arn, 'Id': targets_id, 'RoleArn': role_arn},
         ]
 
         event_bridge_client.put_rule(**rule_kwargs)
