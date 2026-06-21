@@ -1,9 +1,8 @@
 """Integration tests for Step Functions state machines invoking Lambda functions."""
 
 import json
-import time
 
-import pytest
+from aws_qa_learning.utils import poll_until
 
 
 def test_state_machine_writes_item_to_dynamodb(
@@ -44,24 +43,20 @@ def test_state_machine_writes_item_to_dynamodb(
         input=json.dumps(execution_input),
     )['executionArn']
 
-    timeout_seconds = 10
-    poll_interval_seconds = 0.5
-    deadline = time.monotonic() + timeout_seconds
-
-    while time.monotonic() < deadline:
+    def _execution_settled():
+        """Return the execution description once it's no longer RUNNING, else None."""
         response = step_functions_client.describe_execution(executionArn=execution_arn)
         if response['status'] != 'RUNNING':
-            break
-        time.sleep(poll_interval_seconds)
-    else:
-        pytest.fail(f'Execution did not reach a terminal state within {timeout_seconds}s')
+            return response
+        return None
 
-    assert response['status'] == 'SUCCEEDED'
+    settled = poll_until(_execution_settled)
+    assert settled['status'] == 'SUCCEEDED'
 
-    stored = dynamodb_client.get_item(
+    response = dynamodb_client.get_item(
         TableName=table_name,
         Key={'PK': {'S': 'CUSTOMER#123'}, 'SK': {'S': 'PROFILE'}},
     )
 
-    assert 'Item' in stored
-    assert stored['Item'] == item
+    assert 'Item' in response
+    assert response['Item'] == item
