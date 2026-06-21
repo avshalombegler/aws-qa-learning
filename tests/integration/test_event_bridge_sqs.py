@@ -1,11 +1,9 @@
 """Integration test verifying EventBridge delivers events to an SQS queue target."""
 
 import json
-import time
-
-import pytest
 
 from aws_qa_learning.helpers.sqs import get_queue_arn, receive_messages_from_queue
+from aws_qa_learning.utils import poll_until
 
 
 def test_eventbridge_routes_event_to_sqs_queue(
@@ -37,17 +35,13 @@ def test_eventbridge_routes_event_to_sqs_queue(
 
     event_bridge_client.put_events(Entries=entries)
 
-    timeout_seconds = 10
-    poll_interval_seconds = 0.5
-    deadline = time.monotonic() + timeout_seconds
-
-    while time.monotonic() < deadline:
+    def _message_received():
+        """Return the parsed body of the first SQS message once one arrives, else None."""
         received_messages = receive_messages_from_queue(sqs_client, queue_url)
         if received_messages:
-            break
-        time.sleep(poll_interval_seconds)
-    else:
-        pytest.fail(f'Message was not received within {timeout_seconds}s')
+            return json.loads(received_messages[0]['Body'])
+        return None
 
-    received_message_body = json.loads(received_messages[0]['Body'])
+    received_message_body = poll_until(_message_received)
+
     assert received_message_body['detail'] == item
