@@ -1,8 +1,6 @@
 """Integration test for a Lambda triggered by a DynamoDB Stream."""
 
-import time
-
-import pytest
+from aws_qa_learning.utils import poll_until
 
 
 def test_lambda_copies_item_from_stream_to_target_table(
@@ -40,21 +38,14 @@ def test_lambda_copies_item_from_stream_to_target_table(
         Item=item,
     )
 
-    # The stream → Lambda flow is asynchronous: the write to table A triggers the
-    # Lambda eventually, not immediately. Poll table B with a timeout until the item
-    # appears (never a fixed sleep, which is too slow or flaky).
-    timeout_seconds = 10
-    poll_interval_seconds = 0.5
-    deadline = time.monotonic() + timeout_seconds
-    while time.monotonic() < deadline:
+    def _item_received():
+        """Return the replicated item once it exists in the target table, else None."""
         response = dynamodb_client.get_item(
             TableName=target_table_name,
             Key={'PK': {'S': 'CUSTOMER#123'}, 'SK': {'S': 'PROFILE'}},
         )
-        if 'Item' in response:
-            break
-        time.sleep(poll_interval_seconds)
-    else:
-        pytest.fail(f'Item did not appear in DynamoDB within {timeout_seconds}s')
+        return response.get('Item')
 
-    assert response['Item'] == item
+    received_item = poll_until(_item_received)
+
+    assert received_item == item
