@@ -1,9 +1,8 @@
 """Integration tests for EventBridge triggering Step Functions state machines that invoke Lambda functions."""
 
 import json
-import time
 
-import pytest
+from aws_qa_learning.utils import poll_until
 
 
 def test_event_bridge_triggers_state_machine_lambda_writer(
@@ -64,19 +63,14 @@ def test_event_bridge_triggers_state_machine_lambda_writer(
 
     event_bridge_client.put_events(Entries=entries)
 
-    timeout_seconds = 10
-    poll_interval_seconds = 0.5
-    deadline = time.monotonic() + timeout_seconds
-
-    while time.monotonic() < deadline:
+    def _item_received():
+        """Return the stored item once it exists in the table, else None."""
         response = dynamodb_client.get_item(
             TableName=table_name,
             Key={'PK': {'S': 'CUSTOMER#123'}, 'SK': {'S': 'PROFILE'}},
         )
-        if 'Item' in response:
-            break
-        time.sleep(poll_interval_seconds)
-    else:
-        pytest.fail(f'Item did not appear in DynamoDB within {timeout_seconds}s')
+        return response.get('Item')
 
-    assert response['Item'] == item
+    received_item = poll_until(_item_received)
+
+    assert received_item == item
