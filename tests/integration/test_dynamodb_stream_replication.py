@@ -2,6 +2,8 @@
 
 import time
 
+import pytest
+
 
 def test_lambda_copies_item_from_stream_to_target_table(
     dynamodb_client, lambda_factory, table_factory, event_source_mapping_factory
@@ -44,17 +46,15 @@ def test_lambda_copies_item_from_stream_to_target_table(
     timeout_seconds = 10
     poll_interval_seconds = 0.5
     deadline = time.monotonic() + timeout_seconds
-    received = None
-
     while time.monotonic() < deadline:
         response = dynamodb_client.get_item(
             TableName=target_table_name,
-            Key={'PK': {'S': 'CUSTOMER#123'}, 'SK': {'S': 'PROFILE'}},  # the key the Lambda writes to B
+            Key={'PK': {'S': 'CUSTOMER#123'}, 'SK': {'S': 'PROFILE'}},
         )
-        if 'Item' in response:  # success condition: the item appeared
-            received = response
+        if 'Item' in response:
             break
         time.sleep(poll_interval_seconds)
+    else:
+        pytest.fail(f'Item did not appear in DynamoDB within {timeout_seconds}s')
 
-    assert received is not None  # fail-fast if the timeout passed without the item
-    assert received['Item'] == item  # then assert on the content
+    assert response['Item'] == item
