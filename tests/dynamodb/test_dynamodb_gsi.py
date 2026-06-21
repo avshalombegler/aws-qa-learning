@@ -1,8 +1,7 @@
 """Tests for DynamoDB global secondary index (GSI) queries."""
 
-import time
-
 from aws_qa_learning.helpers.dynamodb import put_item_to_db
+from aws_qa_learning.utils import poll_until
 
 
 def test_gsi(dynamodb_client, table_factory) -> None:
@@ -31,12 +30,8 @@ def test_gsi(dynamodb_client, table_factory) -> None:
     # poll with a timeout rather than query once (and never use a fixed sleep, which is
     # either too slow or flaky). LocalStack updates the GSI synchronously, so this loop
     # typically succeeds on the first attempt here.
-    timeout_seconds = 5
-    poll_interval_seconds = 0.5
-    deadline = time.monotonic() + timeout_seconds
-    items = []
-
-    while time.monotonic() < deadline:
+    def _items_received():
+        """Return the queried items once both expected items appear, else None."""
         response = dynamodb_client.query(
             TableName=table_name,
             IndexName=gsi_name,
@@ -45,13 +40,13 @@ def test_gsi(dynamodb_client, table_factory) -> None:
         )
         items = response['Items']
         if len(items) == 2:
-            break
-        time.sleep(poll_interval_seconds)
+            return items
+        return None
 
-    assert len(items) == 2
+    received_items = poll_until(_items_received)
 
-    returned_pks = {item['PK']['S'] for item in items}
+    returned_pks = {item['PK']['S'] for item in received_items}
     assert returned_pks == {'CUSTOMER#123', 'CUSTOMER#999'}
 
-    returned_emails = [item['email']['S'] for item in items]
+    returned_emails = [item['email']['S'] for item in received_items]
     assert all(email == email_a for email in returned_emails)
