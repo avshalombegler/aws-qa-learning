@@ -26,7 +26,7 @@ aws-qa-learning/
 │   └── aws_qa_learning/
 │       ├── helpers/            # S3, SQS, and DynamoDB helper functions
 │       ├── aws_clients.py      # Centralized boto3 client factories pointed at LocalStack
-│       └── utils.py            # Shared test utilities 
+│       └── utils.py            # Shared test utilities
 ├── tests/                      # Learning exercises
 │   ├── dynamodb
 │   ├── integration
