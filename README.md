@@ -5,9 +5,10 @@ Personal learning project for AWS testing patterns using LocalStack as an emulat
 ## Stack
 
 - Python 3.12 (managed via `uv`)
-- LocalStack (Docker Compose)
+- LocalStack (Docker Compose) — S3, SQS, SNS, DynamoDB, Lambda, IAM, STS, Logs, EventBridge, Step Functions
 - pytest + boto3
 - AWS CLI + awslocal
+- ruff (lint/format), taskipy (task runner)
 
 ## Setup
 
@@ -18,14 +19,17 @@ Personal learning project for AWS testing patterns using LocalStack as an emulat
 
 ## Structure
 
-- `src/aws_qa_learning/` - reusable helpers and fixtures
-- `tests/` - learning exercises and pattern demonstrations
-- `docs/notes.md` - inline learning notes
+- `src/aws_qa_learning/aws_clients.py` - centralized boto3 client factories pointed at LocalStack
+- `src/aws_qa_learning/helpers/` - S3, SQS, and DynamoDB helper functions
+- `src/aws_qa_learning/utils.py` - shared test utilities (`poll_until` for conditional polling, zip packaging for Lambda deploys)
+- `src/aws_qa_learning/scripts/` - standalone example scripts
+- `lambdas/` - Lambda handlers used by integration tests (echo, DynamoDB writer, DynamoDB Stream replicator)
+- `tests/` - learning exercises and pattern demonstrations, organized by service (`s3/`, `sqs/`, `sns/`, `dynamodb/`, `lambda/`) plus `tests/integration/` for cross-service flows
+- `tests/factories.py` / `tests/conftest.py` - shared pytest fixtures and resource factories
 
 ## Learning Phases
 
-- [ ] Phase 1: S3 + boto3 fundamentals
-- [ ] Phase 2: Messaging (SQS, SNS)
-- [ ] Phase 3: State & Compute (DynamoDB, Lambda)
-- [ ] Phase 4: Integration (Step Functions, EventBridge)
-- [ ] Phase 5: Portfolio integration with seleniumbase-python
+- [x] Phase 1: S3 + boto3 fundamentals
+- [x] Phase 2: Messaging (SQS, SNS)
+- [x] Phase 3: State & Compute (DynamoDB, Lambda)
+- [x] Phase 4: Integration (Step Functions, EventBridge)
