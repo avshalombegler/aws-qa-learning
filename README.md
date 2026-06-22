@@ -21,13 +21,13 @@ Personal learning project for AWS testing patterns using LocalStack as an emulat
 
 ```text
 aws-qa-learning/
+├── lambdas/                    # Lambda handlers
 ├── src/
 │   └── aws_qa_learning/
+│       ├── helpers/            # S3, SQS, and DynamoDB helper functions
 │       ├── aws_clients.py      # Centralized boto3 client factories pointed at LocalStack
-│       ├── utils.py            # Shared test utilities 
-│       └── helpers/            # S3, SQS, and DynamoDB helper functions
-├── lambdas/                    # Lambda handlers
-├── tests/
+│       └── utils.py            # Shared test utilities 
+├── tests/                      # Learning exercises
 │   ├── dynamodb
 │   ├── integration
 │   ├── lambda
@@ -40,13 +40,6 @@ aws-qa-learning/
 ├── pyproject.toml
 └── README.md
 ```
-
-- `src/aws_qa_learning/aws_clients.py` - centralized boto3 client factories pointed at LocalStack
-- `src/aws_qa_learning/helpers/` - S3, SQS, and DynamoDB helper functions
-- `src/aws_qa_learning/utils.py` - shared test utilities (`poll_until` for conditional polling, zip packaging for Lambda deploys)
-- `lambdas/` - Lambda handlers used by integration tests (echo, DynamoDB writer, DynamoDB Stream replicator)
-- `tests/` - learning exercises and pattern demonstrations, organized by service (`s3/`, `sqs/`, `sns/`, `dynamodb/`, `lambda/`) plus `tests/integration/` for cross-service flows
-- `tests/factories.py` / `tests/conftest.py` - shared pytest fixtures and resource factories
 
 ## Learning Phases
 
