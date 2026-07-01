@@ -3,6 +3,7 @@
 import json
 import uuid
 from collections.abc import Callable, Generator
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -170,14 +171,14 @@ def lambda_factory(lambda_client) -> Generator[Callable[..., str], Any, None]:
     created_functions = []
 
     def _create_lambda(file_path: str, handler: str, environment: dict | None = None) -> str:
-        function_name = f'my-lambda-{uuid.uuid4()}'
         file_name = file_path.split('/')[-1]
+        function_name = f'{Path(file_path).stem}'
         code = make_zip_bytes(file_path, file_name)
         kwargs = {
             'FunctionName': function_name,
             'Runtime': 'python3.12',
             'Role': 'arn:aws:iam::000000000000:role/lambda-role',
-            'Handler': f'{file_name.split(".")[0]}.{handler}',
+            'Handler': f'{function_name}.{handler}',
             'Code': {'ZipFile': code},
         }
 
